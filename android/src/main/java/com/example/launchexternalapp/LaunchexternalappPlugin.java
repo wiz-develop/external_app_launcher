@@ -13,6 +13,10 @@ import android.content.Intent;
 import android.text.TextUtils;
 import android.content.pm.PackageManager;
 
+import java.util.Map;
+import android.util.Log;
+import org.json.JSONObject;
+
 /** LaunchExternalAppPlugin */
 public class LaunchexternalappPlugin implements MethodCallHandler, FlutterPlugin {
 
@@ -57,8 +61,9 @@ public class LaunchexternalappPlugin implements MethodCallHandler, FlutterPlugin
     } else if (call.method.equals("openApp")) {
 
       String packageName = call.argument("package_name");
+      Map<String, Object> appParameters = call.argument("app_parameters");
 
-      result.success(openApp(packageName, call.argument("open_store").toString()));
+      result.success(openApp(packageName, call.argument("open_store").toString(), appParameters));
 
     } else {
       result.notImplemented();
@@ -74,10 +79,13 @@ public class LaunchexternalappPlugin implements MethodCallHandler, FlutterPlugin
     }
   }
 
-  private String openApp(String packageName, String openStore) {
+  private String openApp(String packageName, String openStore, Map<String, Object> appParameters) {
     if (isAppInstalled(packageName)) {
       Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(packageName);
       if (launchIntent != null) {
+        if (appParameters != null && !appParameters.isEmpty()) {
+            launchIntent.putExtra("parameters", new JSONObject(appParameters).toString());
+        }
         // null pointer check in case package name was not found
         launchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(launchIntent);

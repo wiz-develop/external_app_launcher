@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -32,12 +33,19 @@ class LaunchApp {
       {String? iosUrlScheme,
       String? androidPackageName,
       String? appStoreLink,
-      bool? openStore}) async {
+      bool? openStore,
+      Map<String, dynamic>? appParameters
+      }) async {
     String? packageName = Platform.isIOS ? iosUrlScheme : androidPackageName;
     String packageVariableName =
         Platform.isIOS ? 'iosUrlScheme' : 'androidPackageName';
     if (packageName == null || packageName == "") {
       throw Exception('The $packageVariableName can not be empty');
+    }
+
+    if (Platform.isIOS && appParameters != null && appParameters.isNotEmpty) {
+      String encodedJson = Uri.encodeComponent(jsonEncode(appParameters));
+      packageName = packageName + "?p=" + encodedJson;
     }
     if (Platform.isIOS && appStoreLink == null && openStore != false) {
       openStore = false;
@@ -46,7 +54,8 @@ class LaunchApp {
     return await _channel.invokeMethod('openApp', {
       'package_name': packageName,
       'open_store': openStore == false ? "false" : "open it",
-      'app_store_link': appStoreLink
+      'app_store_link': appStoreLink,
+      'app_parameters': appParameters ?? <String, dynamic>{},
     }).then((value) {
       if (value == "app_opened") {
         print("app opened successfully");
